@@ -1,6 +1,6 @@
 # Serverless Content Syndication with AWS Step Functions
 
-This repository contains the full source code that is used in the technical guide [TODO: Add after guide is published].
+This repository contains the full source code that is used in the technical guide [Create a Serverless Content Syndication Pipeline with AWS Step Functions](https://d1.awsstatic.com/whitepapers/create-a-serverless-content-syndication-pipeline-with-aws-step-functions.pdf)
 
 ## Solution Overview
 
