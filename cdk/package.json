@@ -12,28 +12,28 @@
     "cdk": "cdk"
   },
   "devDependencies": {
-    "@aws-cdk/assert": "1.61.1",
-    "@types/jest": "^26.0.10",
-    "@types/node": "10.17.27",
-    "jest": "^26.4.2",
-    "ts-jest": "^26.2.0",
-    "aws-cdk": "1.61.1",
-    "ts-node": "^8.1.0",
+    "@aws-cdk/assert": "1.119.0",
+    "@types/jest": "^27.0.1",
+    "@types/node": "16.6.2",
+    "jest": "^27.0.6",
+    "ts-jest": "^27.0.5",
+    "aws-cdk": "1.119.0",
+    "ts-node": "^10.2.1",
     "tslint": "^6.1.3",
-    "typescript": "~3.9.7"
+    "typescript": "~4.3.5"
   },
   "dependencies": {
-    "@aws-cdk/core": "1.61.1",
-    "source-map-support": "^0.5.16",
-    "@aws-cdk/aws-stepfunctions": "1.61.1",
-    "@aws-cdk/aws-lambda": "1.61.1",
-    "@aws-cdk/aws-s3": "1.61.1",
-    "@aws-cdk/aws-s3-notifications": "1.61.1",
-    "@aws-cdk/aws-iam": "1.61.1",
-    "@aws-cdk/aws-mediaconvert": "1.61.1",
-    "@aws-cdk/aws-events": "1.61.1",
-    "@aws-cdk/aws-events-targets": "1.61.1",
-    "@aws-cdk/aws-lambda-event-sources": "1.61.1",
-    "@aws-cdk/aws-stepfunctions-tasks": "1.61.1"
+    "@aws-cdk/core": "1.119.0",
+    "source-map-support": "^0.5.19",
+    "@aws-cdk/aws-stepfunctions": "1.119.0",
+    "@aws-cdk/aws-lambda": "1.119.0",
+    "@aws-cdk/aws-s3": "1.119.0",
+    "@aws-cdk/aws-s3-notifications": "1.119.0",
+    "@aws-cdk/aws-iam": "1.119.0",
+    "@aws-cdk/aws-mediaconvert": "1.119.0",
+    "@aws-cdk/aws-events": "1.119.0",
+    "@aws-cdk/aws-events-targets": "1.119.0",
+    "@aws-cdk/aws-lambda-event-sources": "1.119.0",
+    "@aws-cdk/aws-stepfunctions-tasks": "1.119.0"
   }
 }
