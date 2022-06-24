@@ -6,7 +6,7 @@ import * as crypto from "crypto";
 
 import { PartnerResult, ProcessingStepResult } from "./shared";
 
-const Jimp = require("jimp");
+const Jimp = require("jimp-compact");
 const convert = require("xml-js");
 
 const OUTPUT_BUCKET_NAME = process.env.OUTPUT_BUCKET_NAME!;
