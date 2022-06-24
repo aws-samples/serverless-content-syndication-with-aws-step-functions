@@ -12,3 +12,5 @@ cdk.out
 /serverless-content-syndication-with-step-functions.iml
 .DS_Store
 .idea/
+/cdk/cdk.context.json
+*.iml
