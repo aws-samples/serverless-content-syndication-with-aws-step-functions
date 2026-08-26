@@ -9,8 +9,9 @@ This repository contains the full source code that is used in the technical guid
 ### Prerequisites
 
 - An [AWS account](https://signin.aws.amazon.com/signin)
+- [Node.js](https://nodejs.org/) 20 or later (used to run the AWS CDK and to transpile the TypeScript sources)
 - Installed and authenticated [AWS CLI](https://docs.aws.amazon.com/en_pv/cli/latest/userguide/cli-chap-install.html) (authenticate with an [IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started.html) user or an [AWS STS](https://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html) Security Token)
-- Installed and setup [AWS Cloud Development Kit (AWS CDK)](https://docs.aws.amazon.com/cdk/latest/guide/getting_started.html)
+- [AWS Cloud Development Kit (AWS CDK) v2](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html). A pinned version of the CDK CLI is installed locally as part of the `cdk` package dependencies, so you can run it with `npx cdk` without a global install.
 
 ### Let’s get you started
 
@@ -44,7 +45,7 @@ Navigate to each of the folders and run `npm install`
                              
 #### 4. Configure your stack
 
-Before we can deploy the stack, we need to set two parameters in `cdk/bin/cdk.ts`
+Before we can deploy the stack, we need to set two parameters. You can either edit them directly in `cdk/bin/cdk.ts`, or provide them via the `MEDIACONVERT_ENDPOINT_URL` and `BUCKET_PREFIX` environment variables (handy for CI or scripted deployments) — the environment variables take precedence when set.
 
 **MediaConvertEndpointURL**
 
@@ -74,9 +75,9 @@ To run our code with the node.js Lambda runtime, we need to transpile the TypeSc
 Navigate to the `cdk` folder and run the following commands
 
 ```
-cdk synth 
-cdk bootstrap
-cdk deploy
+npx cdk synth
+npx cdk bootstrap
+npx cdk deploy
 ```
 
 `cdk synth` will synthesize a CloudFormation template from your CDK code. After bootstrapping the required resources for the CDK with `cdk bootstrap` you can then deploy the template with `cdk deploy`.
@@ -98,7 +99,7 @@ When you are done, make sure to clean everything up.
 Run the following command to shut down the resources created in this workshop.
 
 ```
-cdk destroy
+npx cdk destroy
 ```
 If you test the workflow, source and destination buckets will contain files. Cloudformation does not delete non-empty buckets and thus `cdk destroy` will not delete those buckets.
 

@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2018",
+    "target": "ES2022",
     "module": "commonjs",
-    "lib": ["es2018"],
+    "lib": ["ES2022"],
     "declaration": true,
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
     "noUnusedLocals": false,
@@ -18,8 +19,9 @@
     "inlineSources": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
+    "skipLibCheck": true,
     "typeRoots": ["./node_modules/@types"],
     "types": ["node"]
   },
-  "exclude": ["cdk.out"]
+  "exclude": ["node_modules"]
 }

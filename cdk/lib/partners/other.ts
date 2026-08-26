@@ -1,13 +1,12 @@
-/* tslint:disable:no-submodule-imports */
-import * as s3 from "@aws-cdk/aws-s3";
-import {Choice, Condition, Parallel, Pass, Result} from "@aws-cdk/aws-stepfunctions";
-import {State} from "@aws-cdk/aws-stepfunctions/lib/states/state";
-import {Construct, Resource} from "@aws-cdk/core";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import {Choice, Condition, IChainable, Parallel, Pass, Result} from "aws-cdk-lib/aws-stepfunctions";
+import {Resource} from "aws-cdk-lib";
+import {Construct} from "constructs";
 
 import {Util} from "../util";
 
 export class OtherPartnerResources extends Resource {
-    public readonly workflowDefinition: State;
+    public readonly workflowDefinition: IChainable;
     private readonly providerIdentifier: string = "OtherProvider";
 
     constructor(scope: Construct, id: string, sourceBucket: s3.Bucket) {

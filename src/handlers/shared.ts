@@ -1,8 +1,15 @@
 import { EventBridgeEvent, S3CreateEvent } from "aws-lambda";
-import * as AWS from "aws-sdk";
+import { GetObjectCommand, ListObjectsV2Command, S3Client } from "@aws-sdk/client-s3";
+import {
+    SendTaskFailureCommand,
+    SendTaskHeartbeatCommand,
+    SendTaskSuccessCommand,
+    SFNClient,
+    StartExecutionCommand
+} from "@aws-sdk/client-sfn";
 
-const StepFunctions = new AWS.StepFunctions({apiVersion: "latest"});
-const S3 = new AWS.S3({apiVersion: "latest"});
+const StepFunctions = new SFNClient({});
+const S3 = new S3Client({});
 
 export interface ProcessingStepResult {
     AssetId: string;
@@ -40,24 +47,24 @@ export async function ProcessUploadToSourceBucket(event: S3CreateEvent) {
         const folder = pathParts.slice(0, pathParts.length - 1).join("/");
         const manifestPath = `${folder}/manifest.json`;
 
-        const objects = await S3.listObjects({
+        const objects = await S3.send(new ListObjectsV2Command({
             Bucket: record.s3.bucket.name,
             Prefix: folder
-        }).promise();
+        }));
 
-        const keysInFolder = objects.Contents!.map((content) => content.Key);
+        const keysInFolder = (objects.Contents ?? []).map((content) => content.Key);
 
         if (keysInFolder.indexOf(manifestPath) < 0) {
             console.log("Manifest not found.");
             return;
         }
 
-        const manifestObj = await S3.getObject({
+        const manifestObj = await S3.send(new GetObjectCommand({
             Bucket: record.s3.bucket.name,
             Key: manifestPath
-        }).promise();
+        }));
 
-        const manifest: Manifest = JSON.parse(manifestObj.Body!.toString());
+        const manifest: Manifest = JSON.parse(await manifestObj.Body!.transformToString());
 
         const folderContainsVideo = keysInFolder.indexOf(`${folder}/${manifest.Video}`) > -1;
         const folderContainsImage = keysInFolder.indexOf(`${folder}/${manifest.Image}`) > -1;
@@ -65,7 +72,7 @@ export async function ProcessUploadToSourceBucket(event: S3CreateEvent) {
 
         if (folderContainsVideo && folderContainsImage && folderContainsMetadata) {
             console.log("Manifest and files found. Starting State Machine");
-            const stepFunctionExecutionResult = await StepFunctions.startExecution({
+            const stepFunctionExecutionResult = await StepFunctions.send(new StartExecutionCommand({
                 input: JSON.stringify({
                     AssetId: folder,
                     Image: {
@@ -83,7 +90,7 @@ export async function ProcessUploadToSourceBucket(event: S3CreateEvent) {
                 }),
                 name: `S3UploadTriggeredExecution${Date.now()}`,
                 stateMachineArn: STATE_MACHINE_ARN
-            }).promise();
+            }));
 
             console.log(stepFunctionExecutionResult);
         } else {
@@ -100,31 +107,30 @@ export async function HandleFinishedTranscoding(event: EventBridgeEvent<"MediaCo
     const token = `${userMetaData.StepFunctionTaskToken1!}${userMetaData.StepFunctionTaskToken2!}${userMetaData.StepFunctionTaskToken3!}`;
 
     if (event.detail.status === "COMPLETE") {
-        await StepFunctions.sendTaskSuccess({
+        await StepFunctions.send(new SendTaskSuccessCommand({
             output: JSON.stringify({
                 AssetId: userMetaData.AssetId,
                 Bucket: userMetaData.Bucket,
-                // tslint:disable-next-line:max-line-length
                 // MediaConvert adds a suffix to the output to allow for multiple outputs in the same location (i.e. _720p, _1080p, ..)
                 // We get the actual filename from the output details
                 Key: event.detail.outputGroupDetails[0].outputDetails[0].outputFilePaths[0].replace(`s3://${userMetaData.Bucket}/`, ""),
                 Type: "Video"
             }),
             taskToken: token
-        }).promise();
+        }));
     }
 
     if (event.detail.status === "STATUS_UPDATE" || event.detail.status === "PROGRESSING") {
-        await StepFunctions.sendTaskHeartbeat({
+        await StepFunctions.send(new SendTaskHeartbeatCommand({
             taskToken: token
-        }).promise();
+        }));
     }
 
     if (event.detail.status === "ERROR" || event.detail.status === "CANCELED") {
-        await StepFunctions.sendTaskFailure({
+        await StepFunctions.send(new SendTaskFailureCommand({
             error: event.detail.errorMessage,
             taskToken: token
-        }).promise();
+        }));
     }
 
     return;

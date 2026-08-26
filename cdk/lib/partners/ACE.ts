@@ -1,25 +1,25 @@
-/* tslint:disable:no-submodule-imports */
-import * as iam from "@aws-cdk/aws-iam";
-import * as lambda from "@aws-cdk/aws-lambda";
-import {CfnJobTemplate, CfnQueue} from "@aws-cdk/aws-mediaconvert";
-import * as s3 from "@aws-cdk/aws-s3";
+import { Duration, Resource } from "aws-cdk-lib";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import {CfnJobTemplate, CfnQueue} from "aws-cdk-lib/aws-mediaconvert";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import {
     Choice,
     Condition,
+    IChainable,
     IntegrationPattern,
     JsonPath,
     Parallel,
     Pass,
     Result,
     TaskInput
-} from "@aws-cdk/aws-stepfunctions";
-import * as tasks from "@aws-cdk/aws-stepfunctions-tasks";
-import { State } from "@aws-cdk/aws-stepfunctions/lib/states/state";
-import {Construct, Duration, Resource} from "@aws-cdk/core";
+} from "aws-cdk-lib/aws-stepfunctions";
+import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
+import { Construct } from "constructs";
 import * as path from "path";
 
 export class AceResources extends Resource {
-    public readonly workflowDefinition: State;
+    public readonly workflowDefinition: IChainable;
     private readonly sourceBucket: s3.Bucket;
     private readonly destinationBucket: s3.Bucket;
     private readonly providerIdentifier: string = "ACE";
@@ -48,7 +48,7 @@ export class AceResources extends Resource {
     private createWorkflow(): Choice {
         const lambdaDependencies = new lambda.LayerVersion(this, "LambdaLayer", {
             code: lambda.Code.fromAsset(path.join(__dirname, "..", "..", "..", "src", "lib")),
-            compatibleRuntimes: [lambda.Runtime.NODEJS_12_X],
+            compatibleRuntimes: [lambda.Runtime.NODEJS_24_X],
             description: `Dependencies required to process files for Partner: ${this.providerIdentifier}`,
             license: "Apache-2.0",
         });
@@ -127,7 +127,7 @@ export class AceResources extends Resource {
         });
 
         const videoLambda = new lambda.Function(this, "VideoLambdaFunction", {
-            runtime: lambda.Runtime.NODEJS_12_X,
+            runtime: lambda.Runtime.NODEJS_24_X,
             timeout: Duration.seconds(30),
             handler: "provider-ace.ProcessVideos",
             layers: [dependenices],
@@ -175,7 +175,7 @@ export class AceResources extends Resource {
 
     private createImageProcessingTaskAndRequiredResources(lambdaDependencies: lambda.LayerVersion) {
         const imageProcessingLambda = new lambda.Function(this, "ImageLambdaFunction", {
-            runtime: lambda.Runtime.NODEJS_12_X,
+            runtime: lambda.Runtime.NODEJS_24_X,
             handler: "provider-ace.ProcessImages",
             layers: [lambdaDependencies],
             memorySize: 1024,
@@ -204,7 +204,7 @@ export class AceResources extends Resource {
 
     private createPostProcessingTask(lambdaDependencies: lambda.LayerVersion) {
         const postprocessLambda = new lambda.Function(this, "PostprocessLambdaFunction", {
-            runtime: lambda.Runtime.NODEJS_12_X,
+            runtime: lambda.Runtime.NODEJS_24_X,
             handler: "provider-ace.PostProcessOutput",
             layers: [lambdaDependencies],
             timeout: Duration.seconds(30),
@@ -223,7 +223,7 @@ export class AceResources extends Resource {
 
     private createMetadataProcessingTaskAndRequiredResources(lambdaDependencies: lambda.LayerVersion) {
         const metadataProcessingLambda = new lambda.Function(this, "MetadataLambdaFunction", {
-            runtime: lambda.Runtime.NODEJS_12_X,
+            runtime: lambda.Runtime.NODEJS_24_X,
             handler: "provider-ace.ProcessMetadata",
             layers: [lambdaDependencies],
             timeout: Duration.minutes(2),
