@@ -1,7 +1,12 @@
 // TypeScript import causes Jimp to be undefined
 
-import * as AWS from "aws-sdk";
-import { GetObjectOutput } from "aws-sdk/clients/s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+    CreateJobCommand,
+    CreateJobCommandInput,
+    Input,
+    MediaConvertClient
+} from "@aws-sdk/client-mediaconvert";
 import * as crypto from "crypto";
 
 import { PartnerResult, ProcessingStepResult } from "./shared";
@@ -15,27 +20,25 @@ const MEDIA_CONVERT_ENDPOINT_URL = process.env.MEDIA_CONVERT_ENDPOINT_URL!;
 const MEDIA_CONVERT_ROLE_ARN = process.env.MEDIA_CONVERT_ROLE_ARN!;
 const MEDIA_CONVERT_QUEUE_ARN = process.env.MEDIA_CONVERT_QUEUE_ARN!;
 
-AWS.config.mediaconvert = {endpoint: MEDIA_CONVERT_ENDPOINT_URL};
-
-const MediaConvert = new AWS.MediaConvert({apiVersion: "2017-08-29"});
-const S3 = new AWS.S3({apiVersion: "latest"});
+const MediaConvert = new MediaConvertClient({ endpoint: MEDIA_CONVERT_ENDPOINT_URL });
+const S3 = new S3Client({});
 
 export async function ProcessMetadata(event: any): Promise<ProcessingStepResult> {
-    const metadataObj = await S3.getObject({
+    const metadataObj = await S3.send(new GetObjectCommand({
         Bucket: event.bucketName,
         Key: event.objectKey
-    }).promise();
+    }));
 
-    const metadata = JSON.parse(metadataObj.Body!.toString());
+    const metadata = JSON.parse(await metadataObj.Body!.transformToString());
     const options = {compact: true, ignoreComment: true, spaces: 4};
     const result = convert.json2xml(metadata, options);
 
     const destinationKey = `${event.assetId}/metadata.xml`;
-    await S3.putObject({
+    await S3.send(new PutObjectCommand({
         Body: result,
         Bucket: OUTPUT_BUCKET_NAME,
         Key: destinationKey
-    }).promise();
+    }));
 
     return {
         AssetId: event.assetId,
@@ -46,26 +49,32 @@ export async function ProcessMetadata(event: any): Promise<ProcessingStepResult>
 }
 
 export async function ProcessImages(event: any): Promise<ProcessingStepResult>  {
-    const imageObj = await S3.getObject({
+    const imageObj = await S3.send(new GetObjectCommand({
         Bucket: event.bucketName,
         Key: event.objectKey
-    }).promise();
+    }));
 
-    const buff: Buffer = imageObj.Body as Buffer;
+    const buff: Buffer = Buffer.from(await imageObj.Body!.transformToByteArray());
     const image = await Jimp.read(buff);
-    const awsLogo = await Jimp.read("http://awsmedia.s3.amazonaws.com/AWS_Logo_PoweredBy_127px.png");
 
     const padding = 10;
     image.greyscale();
-    image.composite(awsLogo, padding, image.bitmap.height - awsLogo.bitmap.height - padding);
+
+    // Stamp a text watermark in the bottom-left corner. The watermark is rendered
+    // from a font bundled with jimp-compact, which keeps the sample self-contained
+    // and avoids depending on an external logo asset that can disappear over time.
+    const font = await Jimp.loadFont(Jimp.FONT_SANS_32_WHITE);
+    const watermark = "Powered by AWS";
+    const textHeight = Jimp.measureTextHeight(font, watermark, image.bitmap.width);
+    image.print(font, padding, image.bitmap.height - textHeight - padding, watermark);
 
     const imageBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
 
-    await S3.putObject({
+    await S3.send(new PutObjectCommand({
         Body: imageBuffer,
         Bucket: OUTPUT_BUCKET_NAME,
         Key: event.objectKey
-    }).promise();
+    }));
 
     return {
         AssetId: event.assetId,
@@ -78,7 +87,7 @@ export async function ProcessImages(event: any): Promise<ProcessingStepResult>  
 export async function ProcessVideos(event: any) {
     const s3Path = `s3://${event.bucketName}/${event.objectKey}`;
 
-    const input: AWS.MediaConvert.Types.Input = {
+    const input: Input = {
         AudioSelectors: {
             "Audio Selector 1": {
                 DefaultSelection: "NOT_DEFAULT",
@@ -95,7 +104,7 @@ export async function ProcessVideos(event: any) {
     };
 
     const maxSize = 256;
-    const params: AWS.MediaConvert.Types.CreateJobRequest = {
+    const params: CreateJobCommandInput = {
         JobTemplate: JOB_TEMPLATE_NAME,
         Queue: MEDIA_CONVERT_QUEUE_ARN,
         Role: MEDIA_CONVERT_ROLE_ARN,
@@ -125,9 +134,7 @@ export async function ProcessVideos(event: any) {
         }
     };
 
-    const createJobAPIResponse = await MediaConvert
-        .createJob(params)
-        .promise();
+    const createJobAPIResponse = await MediaConvert.send(new CreateJobCommand(params));
 
     return {
         Job: {
@@ -142,14 +149,15 @@ export async function PostProcessOutput(event: ProcessingStepResult[]): Promise<
      * Some postprocessing logic, i.e. calculating hashes
      */
 
-    const objetsFromS3 = await Promise.all(event.map((ev) => S3.getObject({
+    const objetsFromS3 = await Promise.all(event.map((ev) => S3.send(new GetObjectCommand({
         Bucket: ev.Bucket,
         Key: ev.Key
-    }).promise() as GetObjectOutput));
+    }))));
 
-    const checksums = objetsFromS3
-        .map((obj) => obj.Body as string)
-        .map((body) => crypto.createHash("md5").update(body, "utf8").digest("hex"));
+    const objectBodies = await Promise.all(objetsFromS3.map((obj) => obj.Body!.transformToByteArray()));
+
+    const checksums = objectBodies
+        .map((body) => crypto.createHash("md5").update(Buffer.from(body)).digest("hex"));
 
     return {
         Output: {

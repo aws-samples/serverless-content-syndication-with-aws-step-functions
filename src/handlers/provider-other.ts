@@ -1,6 +1,6 @@
 import {PartnerResult, ProcessingStepResult} from "./shared";
 
-export async function Image(event: any): Promise<ProcessingStepResult> {
+export async function ProcessImageOther(event: any): Promise<ProcessingStepResult> {
     // Logic for Provider B Images
     return {
         AssetId: "",
@@ -10,7 +10,7 @@ export async function Image(event: any): Promise<ProcessingStepResult> {
     };
 }
 
-export async function Metadata(event: any): Promise<ProcessingStepResult> {
+export async function ProcessMetadataOther(event: any): Promise<ProcessingStepResult> {
     // Logic for Provider B Metadata
     return {
         AssetId: "",
@@ -20,7 +20,7 @@ export async function Metadata(event: any): Promise<ProcessingStepResult> {
     };
 }
 
-export async function Video(event: any): Promise<ProcessingStepResult> {
+export async function ProcessVideoOther(event: any): Promise<ProcessingStepResult> {
     // Logic for Provider B Video
     return {
         AssetId: "",
@@ -30,7 +30,7 @@ export async function Video(event: any): Promise<ProcessingStepResult> {
     };
 }
 
-export async function Postprocess(event: ProcessingStepResult[]): Promise<PartnerResult> {
+export async function PostprocessOther(event: ProcessingStepResult[]): Promise<PartnerResult> {
     // Logic for Provider B Output Postprocessing
     return {
         Output: {},

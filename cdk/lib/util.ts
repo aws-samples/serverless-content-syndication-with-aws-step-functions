@@ -1,6 +1,6 @@
-import * as lambda from "@aws-cdk/aws-lambda";
-import * as tasks from "@aws-cdk/aws-stepfunctions-tasks";
-import * as cdk from "@aws-cdk/core";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
+import { Construct } from "constructs";
 import * as path from "path";
 
 export class Util {
@@ -11,9 +11,9 @@ export class Util {
      * @param handlerFile The .ts file in handlers that contains the function name
      * @param functionName The function name that is called
      */
-    public static makeLambdaFromJSFunction(scope: cdk.Construct, handlerFile: string, functionName: string): lambda.Function {
+    public static makeLambdaFromJSFunction(scope: Construct, handlerFile: string, functionName: string): lambda.Function {
         return new lambda.Function(scope, `${functionName}Lambda`, {
-            runtime: lambda.Runtime.NODEJS_12_X,
+            runtime: lambda.Runtime.NODEJS_24_X,
             handler: `${handlerFile}.${functionName}`,
             tracing: lambda.Tracing.ACTIVE,
             code: lambda.Code.fromAsset(path.join(__dirname, "..", "..", "src", "handlers"))
@@ -28,7 +28,7 @@ export class Util {
      * @param id The id for the CDK resource. This will also be the name of the Step in State Functions. Defaults to the function name
      * @private
      */
-    public static makeLambdaInvokeTaskFromJSFunction(scope: cdk.Construct, handlerFile: string, functionName: string, id: string = functionName) {
+    public static makeLambdaInvokeTaskFromJSFunction(scope: Construct, handlerFile: string, functionName: string, id: string = functionName) {
         return new tasks.LambdaInvoke(scope, `${id}`, {
             lambdaFunction: Util.makeLambdaFromJSFunction(scope, handlerFile, functionName),
             outputPath: "$.Payload"

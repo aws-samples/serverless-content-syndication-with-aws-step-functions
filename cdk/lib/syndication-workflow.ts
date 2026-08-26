@@ -1,28 +1,29 @@
-import * as events from "@aws-cdk/aws-events";
-import * as eventtargets from "@aws-cdk/aws-events-targets";
-import * as iam from "@aws-cdk/aws-iam";
-import * as lambda from "@aws-cdk/aws-lambda";
-import * as s3 from "@aws-cdk/aws-s3";
-import * as s3notifications from "@aws-cdk/aws-s3-notifications";
-import * as sfn from "@aws-cdk/aws-stepfunctions";
-import * as cdk from "@aws-cdk/core";
+import { Duration, Stack, StackProps } from "aws-cdk-lib";
+import * as events from "aws-cdk-lib/aws-events";
+import * as eventtargets from "aws-cdk-lib/aws-events-targets";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import * as s3notifications from "aws-cdk-lib/aws-s3-notifications";
+import * as sfn from "aws-cdk-lib/aws-stepfunctions";
+import { Construct } from "constructs";
 import * as path from "path";
 
 import {AceResources} from "./partners/ACE";
 import {OtherPartnerResources} from "./partners/other";
 import {Util} from "./util";
 
-interface SyndicationStackProps extends cdk.StackProps {
+interface SyndicationStackProps extends StackProps {
     MediaConvertEndpointURL: string;
     BucketPrefix: string;
 }
 
-export class SyndicationWorkflow extends cdk.Stack {
+export class SyndicationWorkflow extends Stack {
     private readonly mediaConvertEndpointURL: string;
     private readonly partnerACEDestinationBucketName: string;
     private readonly sourceBucket: s3.Bucket;
 
-    constructor(scope: cdk.Construct, id: string, props: SyndicationStackProps) {
+    constructor(scope: Construct, id: string, props: SyndicationStackProps) {
         super(scope, id, props);
         this.mediaConvertEndpointURL = props.MediaConvertEndpointURL;
         this.partnerACEDestinationBucketName = `${props.BucketPrefix}.partner.ace`;
@@ -59,8 +60,8 @@ export class SyndicationWorkflow extends cdk.Stack {
             .next(ReportResult);
 
         return new sfn.StateMachine(this, "SyndicationStateMachine", {
-            definition: SyndicationWorkflowDefinition,
-            timeout: cdk.Duration.minutes(60),
+            definitionBody: sfn.DefinitionBody.fromChainable(SyndicationWorkflowDefinition),
+            timeout: Duration.minutes(60),
             stateMachineName: "Syndication"
         });
     }
@@ -71,7 +72,7 @@ export class SyndicationWorkflow extends cdk.Stack {
      */
     private setupLambdaForS3Events(stateMachine: sfn.StateMachine) {
         const objectCreatedLambdaHandler = new lambda.Function(this, "FileUploadLambda", {
-            runtime: lambda.Runtime.NODEJS_12_X,
+            runtime: lambda.Runtime.NODEJS_24_X,
             handler: "shared.ProcessUploadToSourceBucket",
             code: lambda.Code.fromAsset(path.join(__dirname, "..", "..", "src", "handlers")),
             environment: {
